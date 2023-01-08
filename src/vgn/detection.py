@@ -8,13 +8,16 @@ import torch
 from vgn import vis
 from vgn.grasp import *
 from vgn.utils.transform import Transform, Rotation
-from vgn.networks import load_network
+from vgn.networks import load_network, EnsembleConvNet
 
 
 class VGN(object):
     def __init__(self, model_path, rviz=False):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.net = load_network(model_path, self.device)
+        self.ensemble = False
+        if isinstance(self.net, EnsembleConvNet):
+            self.ensemble = True
         self.rviz = rviz
         self.id = 0
 
@@ -24,23 +27,27 @@ class VGN(object):
 
         tic = time.time()
         qual_vol, rot_vol, width_vol = predict(tsdf_vol, self.net, self.device)
-        qual_vol, rot_vol, width_vol = process(tsdf_vol, qual_vol, rot_vol, width_vol)
-        np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id}"), np.array([qual_vol, rot_vol, width_vol]),)
-        self.id += 1
-        grasps, scores = select(qual_vol.copy(), rot_vol, width_vol)
-        toc = time.time() - tic
+        if self.ensemble:
+            raise NotImplementedError('Ensemble not implemented yet.')
+            pass
+        else:
+            qual_vol, rot_vol, width_vol = process(tsdf_vol, qual_vol, rot_vol, width_vol)
+            np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id}"), np.array([qual_vol, rot_vol, width_vol]),)
+            self.id += 1
+            grasps, scores = select(qual_vol.copy(), rot_vol, width_vol)
+            toc = time.time() - tic
 
-        grasps, scores = np.asarray(grasps), np.asarray(scores)
+            grasps, scores = np.asarray(grasps), np.asarray(scores)
 
-        if len(grasps) > 0:
-            p = np.random.permutation(len(grasps))
-            grasps = [from_voxel_coordinates(g, voxel_size) for g in grasps[p]]
-            scores = scores[p]
+            if len(grasps) > 0:
+                p = np.random.permutation(len(grasps))
+                grasps = [from_voxel_coordinates(g, voxel_size) for g in grasps[p]]
+                scores = scores[p]
 
-        if self.rviz:
-            vis.draw_quality(qual_vol, state.tsdf.voxel_size, threshold=0.01)
+            if self.rviz:
+                vis.draw_quality(qual_vol, state.tsdf.voxel_size, threshold=0.01)
 
-        return grasps, scores, toc
+            return grasps, scores, toc
 
 
 def predict(tsdf_vol, net, device):
