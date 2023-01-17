@@ -9,6 +9,7 @@ from scipy import ndimage
 def get_network(name):
     models = {
         "conv": ConvNet(),
+        "ensembleconv": EnsembleConvNet()
     }
     return models[name.lower()]
 
@@ -36,7 +37,7 @@ def conv_stride(in_channels, out_channels, kernel_size):
     )
 
 
-class ConvNet(nn.Module):
+class EnsembleConvNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = Encoder(1, [16, 32, 64], [5, 3, 3])
@@ -62,6 +63,24 @@ class ConvNet(nn.Module):
         qual_out = torch.cat(
             [qual_out1, qual_out2, qual_out3, qual_out4, qual_out5], dim=1
         )
+        rot_out = F.normalize(self.conv_rot(x), dim=1)
+        width_out = self.conv_width(x)
+        return qual_out, rot_out, width_out
+    
+    
+class ConvNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder = Encoder(1, [16, 32, 64], [5, 3, 3])
+        self.decoder = Decoder(64, [64, 32, 16], [3, 3, 5])
+        self.conv_qual = conv(16, 1, 5)
+        self.conv_rot = conv(16, 4, 5)
+        self.conv_width = conv(16, 1, 5)
+
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+        qual_out = torch.sigmoid(self.conv_qual(x))
         rot_out = F.normalize(self.conv_rot(x), dim=1)
         width_out = self.conv_width(x)
         return qual_out, rot_out, width_out

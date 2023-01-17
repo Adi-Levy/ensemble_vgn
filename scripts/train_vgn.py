@@ -41,49 +41,70 @@ def main(args):
 
     # build the network
     net = get_network(args.net).to(device)
+    ensemble = (args.net == "ensembleconv")
 
     # define optimizer and metrics
     optimizer = torch.optim.Adam(net.parameters(), lr=args.lr)
 
-    metrics = {
-        "loss": Average(lambda out: out[3], device=device),
-        "accuracy1": Accuracy(lambda out: (torch.round(out[1][0][:,0]) > 0.5, out[2][0] > 0.5), device=device),
-        "accuracy2": Accuracy(lambda out: (torch.round(out[1][0][:,1]) > 0.5, out[2][0] > 0.5), device=device),
-        "accuracy3": Accuracy(lambda out: (torch.round(out[1][0][:,2]) > 0.5, out[2][0] > 0.5), device=device),
-        "accuracy4": Accuracy(lambda out: (torch.round(out[1][0][:,3]) > 0.5, out[2][0] > 0.5), device=device),
-        "accuracy5": Accuracy(lambda out: (torch.round(out[1][0][:,4]) > 0.5, out[2][0] > 0.5), device=device),
-    }
+    if ensemble:
+        metrics = {
+            "loss": Average(lambda out: out[3], device=device),
+            "accuracy1": Accuracy(lambda out: (torch.round(out[1][0][:,0]) > 0.5, out[2][0] > 0.5), device=device),
+            "accuracy2": Accuracy(lambda out: (torch.round(out[1][0][:,1]) > 0.5, out[2][0] > 0.5), device=device),
+            "accuracy3": Accuracy(lambda out: (torch.round(out[1][0][:,2]) > 0.5, out[2][0] > 0.5), device=device),
+            "accuracy4": Accuracy(lambda out: (torch.round(out[1][0][:,3]) > 0.5, out[2][0] > 0.5), device=device),
+            "accuracy5": Accuracy(lambda out: (torch.round(out[1][0][:,4]) > 0.5, out[2][0] > 0.5), device=device),
+        }
+    else:
+        metrics = {
+            "loss": Average(lambda out: out[3], device=device),
+            "accuracy": Accuracy(lambda out: (torch.round(out[1][0]) > 0.5, out[2][0] > 0.5), device=device),
+        }
 
     # create ignite engines for training and validation
-    trainer = create_trainer(net, optimizer, loss_fn, metrics, device)
-    evaluator = create_evaluator(net, loss_fn, metrics, device)
+    trainer = create_trainer(net, optimizer, loss_fn, metrics, device, ensemble)
+    evaluator = create_evaluator(net, loss_fn, metrics, device, ensemble)
 
     # log training progress to the terminal and tensorboard
     ProgressBar(persist=True, ascii=True).attach(trainer)
 
     train_writer, val_writer = create_summary_writers(net, device, logdir)
 
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_train_results(engine):
-        epoch, metrics = trainer.state.epoch, trainer.state.metrics
-        train_writer.add_scalar("loss", metrics["loss"], epoch)
-        train_writer.add_scalar("accuracy1", metrics["accuracy1"], epoch)
-        train_writer.add_scalar("accuracy2", metrics["accuracy2"], epoch)
-        train_writer.add_scalar("accuracy3", metrics["accuracy3"], epoch)
-        train_writer.add_scalar("accuracy4", metrics["accuracy4"], epoch)
-        train_writer.add_scalar("accuracy5", metrics["accuracy5"], epoch)
+    if ensemble:
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def log_train_results(engine):
+            epoch, metrics = trainer.state.epoch, trainer.state.metrics
+            train_writer.add_scalar("loss", metrics["loss"], epoch)
+            train_writer.add_scalar("accuracy1", metrics["accuracy1"], epoch)
+            train_writer.add_scalar("accuracy2", metrics["accuracy2"], epoch)
+            train_writer.add_scalar("accuracy3", metrics["accuracy3"], epoch)
+            train_writer.add_scalar("accuracy4", metrics["accuracy4"], epoch)
+            train_writer.add_scalar("accuracy5", metrics["accuracy5"], epoch)
 
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_validation_results(engine):
-        evaluator.run(val_loader)
-        epoch, metrics = trainer.state.epoch, evaluator.state.metrics
-        val_writer.add_scalar("loss", metrics["loss"], epoch)
-        val_writer.add_scalar("accuracy1", metrics["accuracy1"], epoch)
-        val_writer.add_scalar("accuracy2", metrics["accuracy2"], epoch)
-        val_writer.add_scalar("accuracy3", metrics["accuracy3"], epoch)
-        val_writer.add_scalar("accuracy4", metrics["accuracy4"], epoch)
-        val_writer.add_scalar("accuracy5", metrics["accuracy5"], epoch)
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def log_validation_results(engine):
+            evaluator.run(val_loader)
+            epoch, metrics = trainer.state.epoch, evaluator.state.metrics
+            val_writer.add_scalar("loss", metrics["loss"], epoch)
+            val_writer.add_scalar("accuracy1", metrics["accuracy1"], epoch)
+            val_writer.add_scalar("accuracy2", metrics["accuracy2"], epoch)
+            val_writer.add_scalar("accuracy3", metrics["accuracy3"], epoch)
+            val_writer.add_scalar("accuracy4", metrics["accuracy4"], epoch)
+            val_writer.add_scalar("accuracy5", metrics["accuracy5"], epoch)
+    else:
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def log_train_results(engine):
+            epoch, metrics = trainer.state.epoch, trainer.state.metrics
+            train_writer.add_scalar("loss", metrics["loss"], epoch)
+            train_writer.add_scalar("accuracy", metrics["accuracy"], epoch)
 
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def log_validation_results(engine):
+            evaluator.run(val_loader)
+            epoch, metrics = trainer.state.epoch, evaluator.state.metrics
+            val_writer.add_scalar("loss", metrics["loss"], epoch)
+            val_writer.add_scalar("accuracy", metrics["accuracy"], epoch)
+            
     # checkpoint model
     checkpoint_handler = ModelCheckpoint(
         logdir,
@@ -136,11 +157,13 @@ def select(out, index):
     return label, rot, width
 
 
-def loss_fn(y_pred, y):
+def loss_fn(y_pred, y, ensemble=False):
     label_pred, rotation_pred, width_pred = y_pred
     label, rotations, width = y
-    # loss_qual = _qual_loss_fn(label_pred, label)
-    loss_qual = _qual_loss_fn_ensemble(label_pred, label)
+    if ensemble:
+        loss_qual = _qual_loss_fn(label_pred, label)
+    else:
+        loss_qual = _qual_loss_fn_ensemble(label_pred, label)
     loss_rot = _rot_loss_fn(rotation_pred, rotations)
     loss_width = _width_loss_fn(width_pred, width)
     loss = loss_qual + label * (loss_rot + 0.01 * loss_width)
@@ -169,7 +192,7 @@ def _width_loss_fn(pred, target):
     return F.mse_loss(pred, target, reduction="none")
 
 
-def create_trainer(net, optimizer, loss_fn, metrics, device):
+def create_trainer(net, optimizer, loss_fn, metrics, device, ensemble=False):
     def _update(_, batch):
         net.train()
         optimizer.zero_grad()
@@ -177,7 +200,7 @@ def create_trainer(net, optimizer, loss_fn, metrics, device):
         # forward
         x, y, index = prepare_batch(batch, device)
         y_pred = select(net(x), index)
-        loss = loss_fn(y_pred, y)
+        loss = loss_fn(y_pred, y, ensemble=ensemble)
 
         # backward
         loss.backward()
@@ -193,13 +216,13 @@ def create_trainer(net, optimizer, loss_fn, metrics, device):
     return trainer
 
 
-def create_evaluator(net, loss_fn, metrics, device):
+def create_evaluator(net, loss_fn, metrics, device, ensemble=False):
     def _inference(_, batch):
         net.eval()
         with torch.no_grad():
             x, y, index = prepare_batch(batch, device)
             y_pred = select(net(x), index)
-            loss = loss_fn(y_pred, y)
+            loss = loss_fn(y_pred, y, ensemble=ensemble)
         return x, y_pred, y, loss
 
     evaluator = Engine(_inference)
@@ -223,6 +246,7 @@ def create_summary_writers(net, device, log_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--net", default="conv")
+    # parser.add_argument("--net", default="ensembleconv")
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--logdir", type=Path, default="data/runs")
     parser.add_argument("--description", type=str, default="")
