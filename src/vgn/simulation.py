@@ -11,9 +11,10 @@ from vgn.utils.transform import Rotation, Transform
 
 
 class ClutterRemovalSim(object):
-    def __init__(self, scene, object_set, gui=True, seed=None):
+    def __init__(self, scene, object_set, gui=True, seed=None, train=True):
         assert scene in ["pile", "packed"]
 
+        self.train = train
         self.urdf_root = Path("data/urdfs")
         self.scene = scene
         self.object_set = object_set
@@ -37,6 +38,8 @@ class ClutterRemovalSim(object):
 
     def discover_objects(self):
         root = self.urdf_root / self.object_set
+        if self.object_set != "blocks":
+            root = root / "train" if self.train else root / "test"
         self.object_urdfs = [f for f in root.iterdir() if f.suffix == ".urdf"]
 
     def save_state(self):

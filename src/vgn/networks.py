@@ -42,7 +42,6 @@ class EnsembleConvNet(nn.Module):
         super().__init__()
         self.encoder = Encoder(1, [16, 32, 64], [5, 3, 3])
         self.decoder = Decoder(64, [64, 32, 16], [3, 3, 5])
-        # self.conv_qual = conv(16, 1, 5)
         self.conv_qual1 = conv(16, 1, 5)
         self.conv_qual2 = conv(16, 1, 5)
         self.conv_qual3 = conv(16, 1, 5)
@@ -54,7 +53,6 @@ class EnsembleConvNet(nn.Module):
     def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
-        # qual_out = torch.sigmoid(self.conv_qual(x))
         qual_out1 = torch.sigmoid(self.conv_qual1(x))
         qual_out2 = torch.sigmoid(self.conv_qual2(x))
         qual_out3 = torch.sigmoid(self.conv_qual3(x))

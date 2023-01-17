@@ -28,11 +28,13 @@ class VGN(object):
         tic = time.time()
         qual_vol, rot_vol, width_vol = predict(tsdf_vol, self.net, self.device)
         if self.ensemble:
+            # TODO: Implement ensemble
+            # This is the actual project code
             raise NotImplementedError('Ensemble not implemented yet.')
-            pass
         else:
             qual_vol, rot_vol, width_vol = process(tsdf_vol, qual_vol, rot_vol, width_vol)
-            np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id}"), np.array([qual_vol, rot_vol, width_vol]),)
+            data = np.concatenate([np.expand_dims(qual_vol.copy(),0), rot_vol, np.expand_dims(width_vol.copy(),0)], axis=0)
+            np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id}"), data)
             self.id += 1
             grasps, scores = select(qual_vol.copy(), rot_vol, width_vol)
             toc = time.time() - tic

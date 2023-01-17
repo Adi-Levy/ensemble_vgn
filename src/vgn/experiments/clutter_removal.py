@@ -38,7 +38,7 @@ def run(
     run until (a) no objects remain, (b) the planner failed to find a grasp hypothesis,
     or (c) maximum number of consecutive failed grasp attempts.
     """
-    sim = ClutterRemovalSim(scene, object_set, gui=sim_gui, seed=seed)
+    sim = ClutterRemovalSim(scene, object_set, gui=sim_gui, seed=seed, train=False)
     logger = Logger(logdir, description)
 
     # create a timestamped directory to store the grasps

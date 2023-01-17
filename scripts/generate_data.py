@@ -21,7 +21,7 @@ GRASPS_PER_SCENE = 120
 
 def main(args):
     workers, rank = setup_mpi()
-    sim = ClutterRemovalSim(args.scene, args.object_set, gui=args.sim_gui)
+    sim = ClutterRemovalSim(args.scene, args.object_set, gui=args.sim_gui, train=True)
     finger_depth = sim.gripper.finger_depth
     grasps_per_worker = args.num_grasps // workers
     pbar = tqdm(total=grasps_per_worker, disable=rank != 0)
