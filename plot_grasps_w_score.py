@@ -14,7 +14,7 @@ def plot_grasps_w_score(npy_dir, req_round_id):
             file_name = file.split(".")[0]
             _, round_id, attempt = file_name.split("_")
             # for ech round plot attempts on the same scale
-            if int(round_id) == req_round_id:
+            if int(round_id) == req_round_id and int(attempt) == 5:
                 npy_data = np.load(os.path.join(npy_dir, file), allow_pickle=True)
                 print("attempt: ", attempt)
                 print("locations: ", npy_data[:,0:3])
@@ -34,9 +34,10 @@ def plot_grasps_w_score(npy_dir, req_round_id):
 
 
 if __name__ == "__main__":
-    base_dir = "/home/user_119/docker/grasp_repos/vgn_catkin_ws/src/vgn/sim_res"
+    # base_dir = "/home/user_119/docker/grasp_repos/vgn_catkin_ws/src/vgn/sim_res"
+    base_dir = "sim_res"
     runs = os.listdir(base_dir)
     runs.sort()
     last_run = os.path.join(base_dir, runs[-1])
     # npy_dir = "/home/alexander/Documents/Research/GraspNet/GraspNetAPI/GraspNetAPI/sim_res/2021-05-14_16-30-11"
-    plot_grasps_w_score(last_run, 0)
+    plot_grasps_w_score(last_run, 90)
