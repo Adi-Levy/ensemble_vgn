@@ -67,22 +67,22 @@ def main(args):
     def log_train_results(engine):
         epoch, metrics = trainer.state.epoch, trainer.state.metrics
         train_writer.add_scalar("loss", metrics["loss"], epoch)
-        train_writer.add_scalar("accuracy", metrics["accuracy1"], epoch)
-        train_writer.add_scalar("accuracy", metrics["accuracy2"], epoch)
-        train_writer.add_scalar("accuracy", metrics["accuracy3"], epoch)
-        train_writer.add_scalar("accuracy", metrics["accuracy4"], epoch)
-        train_writer.add_scalar("accuracy", metrics["accuracy5"], epoch)
+        train_writer.add_scalar("accuracy1", metrics["accuracy1"], epoch)
+        train_writer.add_scalar("accuracy2", metrics["accuracy2"], epoch)
+        train_writer.add_scalar("accuracy3", metrics["accuracy3"], epoch)
+        train_writer.add_scalar("accuracy4", metrics["accuracy4"], epoch)
+        train_writer.add_scalar("accuracy5", metrics["accuracy5"], epoch)
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(engine):
         evaluator.run(val_loader)
         epoch, metrics = trainer.state.epoch, evaluator.state.metrics
         val_writer.add_scalar("loss", metrics["loss"], epoch)
-        val_writer.add_scalar("accuracy", metrics["accuracy1"], epoch)
-        val_writer.add_scalar("accuracy", metrics["accuracy2"], epoch)
-        val_writer.add_scalar("accuracy", metrics["accuracy3"], epoch)
-        val_writer.add_scalar("accuracy", metrics["accuracy4"], epoch)
-        val_writer.add_scalar("accuracy", metrics["accuracy5"], epoch)
+        val_writer.add_scalar("accuracy1", metrics["accuracy1"], epoch)
+        val_writer.add_scalar("accuracy2", metrics["accuracy2"], epoch)
+        val_writer.add_scalar("accuracy3", metrics["accuracy3"], epoch)
+        val_writer.add_scalar("accuracy4", metrics["accuracy4"], epoch)
+        val_writer.add_scalar("accuracy5", metrics["accuracy5"], epoch)
 
     # checkpoint model
     checkpoint_handler = ModelCheckpoint(
