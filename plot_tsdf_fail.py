@@ -3,9 +3,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 if __name__ == "__main__":
-    date_time = "23-01-10-19-36-46"
+    date_time = "23-01-17-19-53-11"
     data_dir = f"data/experiments/{date_time}/scenes/"
-    scene_id = "31b02f2ccb5f430f96d52731b833786d"
+    scene_id = "e5829b60535848b69e1db747027319e1"
     # load scene data from npz file
     scene_data = np.load(data_dir + scene_id + ".npz")
     tsdf_vol = scene_data["grid"].squeeze()
@@ -34,7 +34,12 @@ if __name__ == "__main__":
     # Plot the points as a scatter plot
     ax1.scatter(x1, y1, z1, c=v, cmap='coolwarm')
     ax2.scatter(points[:,0], points[:,1], points[:,2], c='r')
-    
+    ax1.set_xlim3d(0, 40)
+    ax1.set_ylim3d(0, 40)
+    ax1.set_zlim3d(0, 40)
+    ax2.set_xlim3d(0, 0.3)
+    ax2.set_ylim3d(0, 0.3)
+    ax2.set_zlim3d(0, 0.3)
     ax1.set_xlabel('X')
     ax1.set_ylabel('Y')
     ax1.set_zlabel('Z')

@@ -10,6 +10,9 @@ def plot_grasp_qual(npy_dir):
     file_list = os.listdir(npy_dir)
     file_list.sort()
     for file in file_list:
+        temp = file.split("_")
+        if len(temp) != 3:
+            continue
         # if file.endswith(".npy"):
             # file_name = file.split(".")[0]
             # _, round_id, attempt = file_name.split("_")
@@ -39,6 +42,7 @@ def plot_grasp_qual(npy_dir):
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         ax.set_zlabel('Z')
+        ax.set_title(file)
         fig.colorbar(scatter)
         # plt.title(f'Round {round_id} Attempt {attempt}')
         plt.show()

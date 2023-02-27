@@ -52,10 +52,14 @@ class VGN(object):
             return grasps, scores, toc
 
 
-def predict(tsdf_vol, net, device):
+def predict(tsdf_vol, net, device, validate=False):
+    if not validate:
     assert tsdf_vol.shape == (1, 40, 40, 40)
 
-    # move input to the GPU
+    # move input to the GPU if needed
+    if isinstance(tsdf_vol, torch.Tensor):
+        tsdf_vol = tsdf_vol.to(device)
+    else:
     tsdf_vol = torch.from_numpy(tsdf_vol).unsqueeze(0).to(device)
 
     # forward pass
