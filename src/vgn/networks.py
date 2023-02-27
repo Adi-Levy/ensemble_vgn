@@ -23,6 +23,7 @@ def load_network(path, device):
     """
     model_name = path.stem.split("_")[1]
     net = get_network(model_name).to(device)
+    # tmp = torch.load(path, map_location=device)
     net.load_state_dict(torch.load(path, map_location=device))
     return net
 
@@ -38,7 +39,7 @@ def conv_stride(in_channels, out_channels, kernel_size):
 
 
 class EnsembleConvNet(nn.Module):
-    def __init__(self, num_qual_heads=5):
+    def __init__(self, num_qual_heads=4):
         super().__init__()
         self.num_qual_heads = num_qual_heads
         self.encoder = Encoder(1, [16, 32, 64], [5, 3, 3])

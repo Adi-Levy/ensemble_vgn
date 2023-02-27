@@ -50,19 +50,23 @@ class VGN(object):
             else:
                 raise NotImplementedError('when using ensemble you must select one 3 methods: max, ucb, maen-var')
 
-            qual = np.transpose(qual, (3,0,1,2))
+            # qual = np.transpose(qual, (3,0,1,2))
             grasps, scores = select(qual.copy(), rot_vol, width_vol)
             # graspss.append(grasps)
             # scoress.append(scores)
             toc = time.time() - tic
 
-            # grasps, scores = np.asarray(graspss), np.asarray(scoress)
+            grasps, scores = np.asarray(grasps), np.asarray(scores)
 
-            # if len(grasps[0]) > 0:
-            #     p = np.random.permutation(len(grasps))
-            #     grasps = [[from_voxel_coordinates(g, voxel_size) for g in grasps[p]] for i in range(0, len(qual_vol))]
-            #     scores = scores[p]
-
+            if len(grasps) > 0:
+                p = np.random.permutation(len(grasps))
+                grasps = [from_voxel_coordinates(g, voxel_size) for g in grasps[p]]
+                scores = scores[p]
+            # if len(grasps) > 0:
+            #     p = np.flip(np.argsort(scores))
+            #     scores = np.flip(np.sort(scores))
+            #     grasps = [from_voxel_coordinates(grasps[i], voxel_size) for i in p]
+            
             if self.rviz:
                 vis.draw_quality(qual_vol, state.tsdf.voxel_size, threshold=0.01)
 

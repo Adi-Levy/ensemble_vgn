@@ -31,6 +31,7 @@ def main(args):
         seed=args.seed,
         sim_gui=args.sim_gui,
         rviz=args.rviz,
+        ensemble_type=args.ensemble_type
     )
 
 

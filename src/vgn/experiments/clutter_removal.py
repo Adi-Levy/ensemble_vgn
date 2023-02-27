@@ -31,6 +31,7 @@ def run(
     seed=1,
     sim_gui=False,
     rviz=False,
+    ensemble_type=None
 ):
     """Run several rounds of simulated clutter removal experiments.
 
@@ -83,7 +84,10 @@ def run(
                 data.append(np.concatenate([grsps[i], np.array([scores[i]], dtype=np.float64)]))
             data = np.array(data, dtype=np.float64)
             # save the grasps to the created directory
-            np.save(f"{dir_name}/grasps_{round_id}_{attempt}.npy", data)
+            if ensemble_type != None:
+                np.save(f"{dir_name}/grasps_{round_id}_{attempt}_enseble_by_{ensemble_type}.npy", data)
+            else:
+                np.save(f"{dir_name}/grasps_{round_id}_{attempt}.npy", data)
 
             if len(grasps) == 0:
                 break  # no detections found, abort this round
