@@ -12,12 +12,13 @@ from vgn.networks import load_network, EnsembleConvNet
 
 
 class VGN(object):
-    def __init__(self, model_path, rviz=False):
+    def __init__(self, model_path, rviz=False, ensemble_type=None):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.net = load_network(model_path, self.device)
         self.ensemble = False
         if isinstance(self.net, EnsembleConvNet):
             self.ensemble = True
+            self.ensemble_type = ensemble_type
         self.rviz = rviz
         self.id = 0
 
@@ -28,9 +29,44 @@ class VGN(object):
         tic = time.time()
         qual_vol, rot_vol, width_vol = predict(tsdf_vol, self.net, self.device)
         if self.ensemble:
-            # TODO: Implement ensemble
             # This is the actual project code
-            raise NotImplementedError('Ensemble not implemented yet.')
+            # raise NotImplementedError('Ensemble not implemented yet.')
+            for i in range(0, len(qual_vol)):
+                qual_vol[i], rot_vol, width_vol = process(tsdf_vol, qual_vol[i], rot_vol, width_vol)
+                data = np.concatenate([np.expand_dims(qual_vol[i].copy(),0), rot_vol, np.expand_dims(width_vol.copy(),0)], axis=0)
+                np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id%5}_{self.id//5}"), data)
+                self.id += 1
+            
+            qual = np.transpose(qual_vol, (1,2,3,0))
+            # max ensemble between qualities
+            if self.ensemble_type == "max":
+                qual = np.max(qual,axis=3)
+            # UCB ensemble between qualities
+            elif self.ensemble_type == "ucb":
+                qual = np.mean(qual, axis=3) + np.var(qual, axis=3)
+            # mean-var ensemble between qualities
+            elif self.ensemble_type == "mean-var":
+                qual = np.mean(qual, axis=3) - np.var(qual, axis=3)
+            else:
+                raise NotImplementedError('when using ensemble you must select one 3 methods: max, ucb, maen-var')
+
+            qual = np.transpose(qual, (3,0,1,2))
+            grasps, scores = select(qual.copy(), rot_vol, width_vol)
+            # graspss.append(grasps)
+            # scoress.append(scores)
+            toc = time.time() - tic
+
+            # grasps, scores = np.asarray(graspss), np.asarray(scoress)
+
+            # if len(grasps[0]) > 0:
+            #     p = np.random.permutation(len(grasps))
+            #     grasps = [[from_voxel_coordinates(g, voxel_size) for g in grasps[p]] for i in range(0, len(qual_vol))]
+            #     scores = scores[p]
+
+            if self.rviz:
+                vis.draw_quality(qual_vol, state.tsdf.voxel_size, threshold=0.01)
+
+            return grasps, scores, toc
         else:
             qual_vol, rot_vol, width_vol = process(tsdf_vol, qual_vol, rot_vol, width_vol)
             data = np.concatenate([np.expand_dims(qual_vol.copy(),0), rot_vol, np.expand_dims(width_vol.copy(),0)], axis=0)
@@ -54,13 +90,13 @@ class VGN(object):
 
 def predict(tsdf_vol, net, device, validate=False):
     if not validate:
-    assert tsdf_vol.shape == (1, 40, 40, 40)
+        assert tsdf_vol.shape == (1, 40, 40, 40)
 
     # move input to the GPU if needed
     if isinstance(tsdf_vol, torch.Tensor):
         tsdf_vol = tsdf_vol.to(device)
     else:
-    tsdf_vol = torch.from_numpy(tsdf_vol).unsqueeze(0).to(device)
+        tsdf_vol = torch.from_numpy(tsdf_vol).unsqueeze(0).to(device)
 
     # forward pass
     with torch.no_grad():
