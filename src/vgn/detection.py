@@ -33,9 +33,9 @@ class VGN(object):
             # raise NotImplementedError('Ensemble not implemented yet.')
             for i in range(0, len(qual_vol)):
                 qual_vol[i], rot_vol, width_vol = process(tsdf_vol, qual_vol[i], rot_vol, width_vol)
-                data = np.concatenate([np.expand_dims(qual_vol[i].copy(),0), rot_vol, np.expand_dims(width_vol.copy(),0)], axis=0)
-                np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id%5}_{self.id//5}"), data)
-                self.id += 1
+                # data = np.concatenate([np.expand_dims(qual_vol[i].copy(),0), rot_vol, np.expand_dims(width_vol.copy(),0)], axis=0)
+                # np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id%5}_{self.id//5}"), data)
+                # self.id += 1
             
             qual = np.transpose(qual_vol, (1,2,3,0))
             # max ensemble between qualities
@@ -50,6 +50,10 @@ class VGN(object):
             else:
                 raise NotImplementedError('when using ensemble you must select one 3 methods: max, ucb, maen-var')
 
+            data = np.concatenate([np.expand_dims(qual.copy(),0), rot_vol, np.expand_dims(width_vol.copy(),0)], axis=0)
+            np.save(os.path.join(os.getcwd(),f"data/grasps/grasps_{self.id}"), data)
+            self.id += 1
+            
             # qual = np.transpose(qual, (3,0,1,2))
             grasps, scores = select(qual.copy(), rot_vol, width_vol)
             # graspss.append(grasps)
